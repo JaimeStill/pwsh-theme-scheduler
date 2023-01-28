@@ -4,6 +4,6 @@ param(
     $Dark
 )
 
-. .\functions.ps1
+. .\mode\mode-functions.ps1
 
 Invoke-Expression $(Build-ThemeModeProperties -Dark:$Dark)
