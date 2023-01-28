@@ -1,0 +1,2 @@
+$lightName = 'ThemeSchedulerLight';
+$darkName = 'ThemeSchedulerDark';
