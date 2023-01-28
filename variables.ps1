@@ -1,2 +1,4 @@
-$lightName = 'ThemeSchedulerLight';
-$darkName = 'ThemeSchedulerDark';
+$Day = 'ThemeSchedulerDay';
+$Night = 'ThemeSchedulerNight';
+$Light = 'ThemeSchedulerModeLight';
+$Dark = 'ThemeSchedulerModeDark';

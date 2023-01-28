@@ -1,16 +1,29 @@
-#Requires -RunAsAdministrator
-
 param(
     [DateTime]
     [Parameter()]
-    $day = (Get-Date "8am"),
+    $DayTime = (Get-Date "8am"),
+    [string]
+    [Parameter(Mandatory)]
+    $DayTheme,
+    [switch]
+    [Parameter()]
+    $DaySystem,
     [DateTime]
     [Parameter()]
-    $night = (Get-Date "8pm")
+    $NightTime = (Get-Date "7pm"),
+    [string]
+    [Parameter(Mandatory)]
+    $NightTheme,
+    [switch]
+    [Parameter()]
+    $NightSystem
 )
 
 . .\variables.ps1
 . .\functions.ps1
 
-Register-ThemeSchedule $lightName $day;
-Register-ThemeSchedule $darkName $night -dark;
+$DayUrl = "$(Get-ThemeUrlBase -System:$DaySystem)$DayTheme";
+$NightUrl = "$(Get-ThemeUrlbase -System:$NightSystem)$NightTheme";
+
+Register-ThemeSchedule $Day $DayTime $DayUrl;
+Register-ThemeSchedule $Night $NightTime $NightUrl;

@@ -1,32 +1,9 @@
-function Register-ThemeSchedule([string] $name, [DateTime] $time, [switch] $dark) {
-    Unregister-ThemeSchedule $name;
-    $action = Build-TaskAction -dark:$dark;
-    $settings = Build-TaskSettings;
-    $trigger = New-ScheduledTaskTrigger -Daily -At $time;
-    $theme = if ($dark) { "dark" } else { "light" }
-
-    Register-ScheduledTask -Action $action `
-                           -Trigger $trigger `
-                           -Settings $settings `
-                           -TaskName $name `
-                           -Description "Theme Scheduler: Set OS Theme to $theme" `
-                           -Force
-}
-
-function Unregister-ThemeSchedule([string] $name) {
-    if ($(Search-ThemeSchedule $name)) {
-        Unregister-ScheduledTask -TaskName $name -Confirm:$false;
+function Get-ThemeUrlBase([switch] $System) {
+    if ($System) {
+        return "$env:SystemRoot\Resources\Themes\"
+    } else {
+        return "$env:localappdata\Microsoft\Windows\Themes\"
     }
-}
-
-function Search-ThemeSchedule([string] $name) {
-    return Get-ScheduledTask | Where-Object {$_.TaskName -like $name }
-}
-
-function Build-TaskAction([switch] $dark) {
-    return New-ScheduledTaskAction `
-        -Execute 'pwsh.exe' `
-        -Argument "-NoProfile -WindowStyle Hidden -Command $(Build-SystemThemeProperties -dark:$dark)";
 }
 
 function Build-TaskSettings {
@@ -35,15 +12,69 @@ function Build-TaskSettings {
                                         -RestartInterval ([TimeSpan]::FromMinutes(1))
 }
 
-function Build-SystemThemeProperties([switch] $dark) {
+function Unregister-Schedule([string] $Name) {
+    if ($(Search-Schedule $Name)) {
+        Unregister-ScheduledTask -TaskName $Name -Confirm:$false;
+    }
+}
+
+function Search-Schedule([string] $Name) {
+    return Get-ScheduledTask | Where-Object {$_.TaskName -like $Name }
+}
+
+function Register-ThemeSchedule([string] $Name, [DateTime] $Time, [string] $Theme) {
+    Unregister-Schedule $Name;
+    $action = Build-ThemeAction -Theme $Theme;
+    $settings = Build-TaskSettings;
+    $trigger = New-ScheduledTaskTrigger -Daily -At $Time;
+    
+    Register-ScheduledTask -TaskName $Name `
+                           -Action $action `
+                           -Trigger $trigger `
+                           -Settings $settings `
+                           -Description "Theme Scheduler: Set OS Theme to $Theme" `
+                           -Force
+}
+
+function Build-ThemeAction([string] $Theme) {
+    return New-ScheduledTaskAction `
+        -Execute 'pwsh.exe' `
+        -Argument "-NoProfile -WindowStyle Hidden -Command $(Build-ThemeProcess $Theme)"
+}
+
+function Build-ThemeProcess([string] $Theme) {
+    return "Start-Process -FilePath $Theme"
+}
+
+function Register-ThemeModeSchedule([string] $Name, [DateTime] $Time, [switch] $Dark) {
+    Unregister-Schedule $Name;
+    $action = Build-ThemeModeAction -Dark:$Dark;
+    $settings = Build-TaskSettings;
+    $trigger = New-ScheduledTaskTrigger -Daily -At $Time;
+    $theme = if ($Dark) { "dark" } else { "light" }
+
+    Register-ScheduledTask -TaskName $Name `
+                           -Action $action `
+                           -Trigger $trigger `
+                           -Settings $settings `
+                           -Description "Theme Scheduler: Set OS Theme Mode to $theme" `
+                           -Force
+}
+function Build-ThemeModeAction([switch] $Dark) {
+    return New-ScheduledTaskAction `
+        -Execute 'pwsh.exe' `
+        -Argument "-NoProfile -WindowStyle Hidden -Command $(Build-ThemeModeProperties -Dark:$Dark)";
+}
+
+function Build-ThemeModeProperties([switch] $Dark) {
     $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
     $system = "SystemUsesLightTheme"
     $apps = "AppsUseLightTheme"
-    $value = if ($dark) { 0 } else { 1 }
+    $value = if ($Dark) { 0 } else { 1 }
 
-    return "$(Build-SystemThemeValue $path $system $value);$(Build-SystemThemeValue $path $apps $value)"
+    return "$(Build-ThemeModeValue $path $system $value);$(Build-ThemeModeValue $path $apps $value)"
 }
 
-function Build-SystemThemeValue([string] $path, [string] $name, [int] $value) {
-    return "New-ItemProperty -Path $path -Name $name -Value $value -Type Dword -Force"
+function Build-ThemeModeValue([string] $Path, [string] $Name, [int] $Value) {
+    return "New-ItemProperty -Path $Path -Name $Name -Value $Value -Type Dword -Force"
 }
